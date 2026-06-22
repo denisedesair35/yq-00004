@@ -9,6 +9,8 @@ const INITIAL_TARGET_COUNT = 25;
 const MAP_WIDTH = 1200;
 const MAP_HEIGHT = 800;
 const WARNING_DURATION = 0.8;
+const DANGEROUS_CHANCE = 0.12;
+const DANGEROUS_DAMAGE = 15;
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -79,7 +81,8 @@ export class Game {
       INITIAL_TARGET_COUNT,
       maxLevel,
       playerRadius,
-      playerPos
+      playerPos,
+      DANGEROUS_CHANCE
     );
   }
 
@@ -184,7 +187,10 @@ export class Game {
     
     for (const target of this.targets) {
       if (checkCollision(playerPos, playerRadius, target)) {
-        if (this.player.canDevour(target.level)) {
+        if (target.type === 'dangerous') {
+          this.player.takeDamage(DANGEROUS_DAMAGE);
+          remainingTargets.push(target);
+        } else if (this.player.canDevour(target.level)) {
           const evolved = this.player.addExp(target.expValue);
           if (evolved) {
             const stage = this.player.getStage();
@@ -197,7 +203,8 @@ export class Game {
             MAP_HEIGHT,
             Math.min(playerLevel + 2, getMaxLevel()),
             playerRadius,
-            playerPos
+            playerPos,
+            DANGEROUS_CHANCE
           );
           remainingTargets.push(newTarget);
         } else {
@@ -239,6 +246,9 @@ export class Game {
       exp: this.player.getExp(),
       expProgress: this.player.getExpProgress(),
       devourCount: this.player.getDevourCount(),
+      health: this.player.getHealth(),
+      maxHealth: this.player.getMaxHealth(),
+      healthProgress: this.player.getHealthProgress(),
       isRunning: this.gameState.isRunning,
       isPaused: this.gameState.isPaused,
       isGameOver: this.gameState.isGameOver,

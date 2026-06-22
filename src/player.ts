@@ -1,10 +1,15 @@
 import type { Position, PlayerState, InputState, EvolutionStage } from './types';
 import { getStageByLevel, getNextStage, getMaxLevel } from './evolution';
 
+const MAX_HEALTH = 100;
+const HIT_COOLDOWN = 0.5;
+const HIT_FLASH_DURATION = 0.2;
+
 export class Player {
   private state: PlayerState;
   private mapWidth: number;
   private mapHeight: number;
+  private hitCooldownTimer: number = 0;
 
   constructor(mapWidth: number, mapHeight: number) {
     this.mapWidth = mapWidth;
@@ -17,7 +22,10 @@ export class Player {
       },
       stage: initialStage,
       exp: 0,
-      devourCount: 0
+      devourCount: 0,
+      health: MAX_HEALTH,
+      maxHealth: MAX_HEALTH,
+      hitFlashTimer: 0
     };
   }
 
@@ -43,6 +51,23 @@ export class Player {
 
     this.state.position.x = Math.max(stage.radius, Math.min(this.mapWidth - stage.radius, newX));
     this.state.position.y = Math.max(stage.radius, Math.min(this.mapHeight - stage.radius, newY));
+
+    if (this.hitCooldownTimer > 0) {
+      this.hitCooldownTimer -= deltaTime;
+    }
+    if (this.state.hitFlashTimer > 0) {
+      this.state.hitFlashTimer -= deltaTime;
+    }
+  }
+
+  public takeDamage(damage: number): boolean {
+    if (this.hitCooldownTimer > 0) {
+      return false;
+    }
+    this.state.health = Math.max(0, this.state.health - damage);
+    this.hitCooldownTimer = HIT_COOLDOWN;
+    this.state.hitFlashTimer = HIT_FLASH_DURATION;
+    return true;
   }
 
   public addExp(amount: number): boolean {
@@ -84,6 +109,18 @@ export class Player {
     return this.state.devourCount;
   }
 
+  public getHealth(): number {
+    return this.state.health;
+  }
+
+  public getMaxHealth(): number {
+    return this.state.maxHealth;
+  }
+
+  public getHealthProgress(): number {
+    return this.state.health / this.state.maxHealth;
+  }
+
   public getRadius(): number {
     return this.state.stage.radius;
   }
@@ -115,28 +152,37 @@ export class Player {
       },
       stage: initialStage,
       exp: 0,
-      devourCount: 0
+      devourCount: 0,
+      health: MAX_HEALTH,
+      maxHealth: MAX_HEALTH,
+      hitFlashTimer: 0
     };
+    this.hitCooldownTimer = 0;
   }
 
   public render(ctx: CanvasRenderingContext2D): void {
-    const { position, stage } = this.state;
+    const { position, stage, hitFlashTimer } = this.state;
+    const isFlashing = hitFlashTimer > 0;
 
     ctx.save();
 
+    const glowRadius = stage.radius * 1.5;
+    const glowColor = isFlashing ? '#FF1744' : stage.color + '80';
     const gradient = ctx.createRadialGradient(
       position.x, position.y, 0,
-      position.x, position.y, stage.radius * 1.5
+      position.x, position.y, glowRadius
     );
-    gradient.addColorStop(0, stage.color + '80');
+    gradient.addColorStop(0, glowColor);
     gradient.addColorStop(1, stage.color + '00');
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(position.x, position.y, stage.radius * 1.5, 0, Math.PI * 2);
+    ctx.arc(position.x, position.y, glowRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = stage.color;
-    ctx.strokeStyle = stage.strokeColor;
+    const bodyColor = isFlashing ? '#FF5252' : stage.color;
+    const strokeColor = isFlashing ? '#FF1744' : stage.strokeColor;
+    ctx.fillStyle = bodyColor;
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(position.x, position.y, stage.radius, 0, Math.PI * 2);

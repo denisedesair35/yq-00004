@@ -24,9 +24,12 @@ export interface PlayerState {
   stage: EvolutionStage;
   exp: number;
   devourCount: number;
+  health: number;
+  maxHealth: number;
+  hitFlashTimer: number;
 }
 
-export type TargetType = 'qi' | 'beast';
+export type TargetType = 'qi' | 'beast' | 'dangerous';
 
 export interface Target {
   id: number;

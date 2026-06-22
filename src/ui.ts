@@ -6,6 +6,9 @@ export interface UIState {
   exp: number;
   expProgress: number;
   devourCount: number;
+  health: number;
+  maxHealth: number;
+  healthProgress: number;
   isRunning: boolean;
   isPaused: boolean;
   isGameOver: boolean;
@@ -36,15 +39,17 @@ export class UIRenderer {
   private renderHUD(state: UIState): void {
     const ctx = this.ctx;
     const padding = 20;
+    const panelWidth = 220;
+    const panelHeight = 175;
 
     ctx.save();
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(padding, padding, 220, 130);
+    ctx.fillRect(padding, padding, panelWidth, panelHeight);
 
     ctx.strokeStyle = '#FFD54F';
     ctx.lineWidth = 2;
-    ctx.strokeRect(padding, padding, 220, 130);
+    ctx.strokeRect(padding, padding, panelWidth, panelHeight);
 
     ctx.fillStyle = '#FFD54F';
     ctx.font = 'bold 18px sans-serif';
@@ -56,14 +61,42 @@ export class UIRenderer {
     ctx.font = '14px sans-serif';
     ctx.fillText(`等级: ${state.level}`, padding + 12, padding + 40);
 
-    ctx.fillStyle = '#aaa';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`经验: ${Math.floor(state.exp)}`, padding + 12, padding + 62);
+    const healthBarWidth = 196;
+    const healthBarHeight = 14;
+    const healthBarX = padding + 12;
+    const healthBarY = padding + 62;
+
+    ctx.fillStyle = '#333';
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+    const healthGradient = ctx.createLinearGradient(healthBarX, healthBarY, healthBarX, healthBarY + healthBarHeight);
+    if (state.healthProgress > 0.5) {
+      healthGradient.addColorStop(0, '#81C784');
+      healthGradient.addColorStop(1, '#388E3C');
+    } else if (state.healthProgress > 0.25) {
+      healthGradient.addColorStop(0, '#FFB74D');
+      healthGradient.addColorStop(1, '#F57C00');
+    } else {
+      healthGradient.addColorStop(0, '#E57373');
+      healthGradient.addColorStop(1, '#D32F2F');
+    }
+    ctx.fillStyle = healthGradient;
+    ctx.fillRect(healthBarX, healthBarY, healthBarWidth * state.healthProgress, healthBarHeight);
+
+    ctx.strokeStyle = '#E53935';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`生命 ${Math.floor(state.health)} / ${state.maxHealth}`, healthBarX + healthBarWidth / 2, healthBarY + 2);
+    ctx.textAlign = 'left';
 
     const expBarWidth = 196;
     const expBarHeight = 14;
     const expBarX = padding + 12;
-    const expBarY = padding + 82;
+    const expBarY = padding + 88;
 
     ctx.fillStyle = '#333';
     ctx.fillRect(expBarX, expBarY, expBarWidth, expBarHeight);
@@ -78,22 +111,26 @@ export class UIRenderer {
     ctx.lineWidth = 1;
     ctx.strokeRect(expBarX, expBarY, expBarWidth, expBarHeight);
 
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(`经验: ${Math.floor(state.exp)}`, padding + 12, padding + 108);
+
     if (state.nextStage) {
       ctx.fillStyle = '#90CAF9';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText(`→ ${state.nextStage.name}`, padding + 208, padding + 62);
+      ctx.fillText(`→ ${state.nextStage.name}`, padding + 208, padding + 108);
     } else {
       ctx.fillStyle = '#90CAF9';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'right';
-      ctx.fillText('已满级', padding + 208, padding + 62);
+      ctx.fillText('已满级', padding + 208, padding + 108);
     }
 
     ctx.fillStyle = '#A5D6A7';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`吞噬: ${state.devourCount} 只`, padding + 12, padding + 104);
+    ctx.fillText(`吞噬: ${state.devourCount} 只`, padding + 12, padding + 148);
 
     ctx.restore();
 

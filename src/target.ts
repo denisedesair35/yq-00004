@@ -30,6 +30,26 @@ const BEAST_COLORS: Record<number, string> = {
   7: '#2E7D32'
 };
 
+const DANGEROUS_NAMES: Record<number, string[]> = {
+  1: ['毒蝎', '血蛛', '骨蛇'],
+  2: ['黑风狼', '毒牙蟒', '赤眼蝠'],
+  3: ['炼魂蛛', '噬金蚁', '腐骨鸦'],
+  4: ['千足毒蜈', '九幽蝎', '血冥蛇'],
+  5: ['幽冥虎', '赤焰蝎', '寒冰蛛'],
+  6: ['万毒之王', '噬魂兽', '枯骨龙'],
+  7: ['混沌毒君', '噬天巨蟒', '九幽魔尊']
+};
+
+const DANGEROUS_COLORS: Record<number, string> = {
+  1: '#E53935',
+  2: '#D32F2F',
+  3: '#C62828',
+  4: '#B71C1C',
+  5: '#880E4F',
+  6: '#4A148C',
+  7: '#1A1A2E'
+};
+
 let targetIdCounter = 0;
 
 export const createTarget = (
@@ -49,6 +69,19 @@ export const createTarget = (
       color: QI_COLORS[level] || QI_COLORS[1],
       expValue: 5 + level * 5,
       name: `${level}阶灵气`
+    };
+  } else if (type === 'dangerous') {
+    const names = DANGEROUS_NAMES[level] || DANGEROUS_NAMES[1];
+    const name = names[Math.floor(Math.random() * names.length)];
+    return {
+      id: targetIdCounter,
+      type: 'dangerous',
+      position,
+      level,
+      radius: 12 + level * 3,
+      color: DANGEROUS_COLORS[level] || DANGEROUS_COLORS[1],
+      expValue: 0,
+      name
     };
   } else {
     const names = BEAST_NAMES[level] || BEAST_NAMES[1];
@@ -71,9 +104,18 @@ export const generateRandomTarget = (
   mapHeight: number,
   maxLevel: number,
   playerRadius: number,
-  playerPosition: Position
+  playerPosition: Position,
+  dangerousChance: number = 0.1
 ): Target => {
-  const type: TargetType = Math.random() < 0.6 ? 'qi' : 'beast';
+  const rand = Math.random();
+  let type: TargetType;
+  if (rand < dangerousChance) {
+    type = 'dangerous';
+  } else if (rand < dangerousChance + (1 - dangerousChance) * 0.6) {
+    type = 'qi';
+  } else {
+    type = 'beast';
+  }
   const level = Math.floor(Math.random() * maxLevel) + 1;
   
   let position: Position;
@@ -105,11 +147,12 @@ export const generateInitialTargets = (
   count: number,
   maxLevel: number,
   playerRadius: number,
-  playerPosition: Position
+  playerPosition: Position,
+  dangerousChance: number = 0.1
 ): Target[] => {
   const targets: Target[] = [];
   for (let i = 0; i < count; i++) {
-    targets.push(generateRandomTarget(mapWidth, mapHeight, maxLevel, playerRadius, playerPosition));
+    targets.push(generateRandomTarget(mapWidth, mapHeight, maxLevel, playerRadius, playerPosition, dangerousChance));
   }
   return targets;
 };
@@ -140,6 +183,43 @@ export const renderTarget = (ctx: CanvasRenderingContext2D, target: Target): voi
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('灵', target.position.x, target.position.y);
+  } else if (target.type === 'dangerous') {
+    const pulseRadius = target.radius * 1.5;
+    const gradient = ctx.createRadialGradient(
+      target.position.x, target.position.y, 0,
+      target.position.x, target.position.y, pulseRadius
+    );
+    gradient.addColorStop(0, 'rgba(229, 57, 53, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(229, 57, 53, 0.3)');
+    gradient.addColorStop(1, 'rgba(229, 57, 53, 0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(target.position.x, target.position.y, pulseRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = target.color;
+    ctx.strokeStyle = '#FF1744';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(target.position.x, target.position.y, target.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(target.name, target.position.x, target.position.y);
+
+    ctx.fillStyle = '#FFEB3B';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠ 危', target.position.x, target.position.y - target.radius - 14);
+
+    ctx.fillStyle = '#FFD54F';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Lv.${target.level}`, target.position.x, target.position.y + target.radius + 12);
   } else {
     ctx.fillStyle = target.color;
     ctx.strokeStyle = '#2E7D32';
