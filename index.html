@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>山海经·吞噬进化</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft YaHei', sans-serif;
+      background-color: #0f0f1a;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #FFD54F;
+      margin-bottom: 20px;
+      font-size: 28px;
+      text-shadow: 0 0 10px rgba(255, 213, 79, 0.5);
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #gameCanvas {
+      border: 3px solid #FFD54F;
+      border-radius: 8px;
+      box-shadow: 0 0 30px rgba(255, 213, 79, 0.3);
+      cursor: pointer;
+    }
+
+    .instructions {
+      max-width: 800px;
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .instructions p {
+      margin-bottom: 8px;
+    }
+
+    .highlight {
+      color: #90CAF9;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐉 山海经·吞噬进化 🐉</h1>
+  <div class="game-container">
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
+    <div class="instructions">
+      <p><span class="highlight">WASD / 方向键</span> 移动 | <span class="highlight">空格</span> 暂停/继续 | <span class="highlight">R</span> 重新开始</p>
+      <p>吞噬比你等级低的灵气团和异兽来获得经验，经验满后进化为更高阶的山海经神兽！</p>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
