@@ -2,12 +2,13 @@ import type { Target, GameState } from './types';
 import { Player } from './player';
 import { InputManager } from './input';
 import { UIRenderer } from './ui';
-import { generateInitialTargets, generateRandomTarget, renderTarget, checkCollision } from './target';
+import { generateInitialTargets, generateRandomTarget, renderTarget, renderTargetWarning, checkCollision } from './target';
 import { getNextStage, getMaxLevel } from './evolution';
 
 const INITIAL_TARGET_COUNT = 25;
 const MAP_WIDTH = 1200;
 const MAP_HEIGHT = 800;
+const WARNING_DURATION = 0.8;
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -16,6 +17,7 @@ export class Game {
   private inputManager: InputManager;
   private uiRenderer: UIRenderer;
   private targets: Target[] = [];
+  private warningTargets: Map<number, number> = new Map();
   private gameState: GameState;
   private lastTime: number = 0;
   private animationFrameId: number | null = null;
@@ -130,6 +132,7 @@ export class Game {
     
     this.player.reset();
     this.targets = [];
+    this.warningTargets.clear();
     this.evolveEffectTimer = 0;
     
     this.gameState.isRunning = false;
@@ -161,6 +164,15 @@ export class Game {
     if (this.evolveEffectTimer > 0) {
       this.evolveEffectTimer -= deltaTime;
     }
+
+    for (const [id, timer] of this.warningTargets) {
+      const newTimer = timer - deltaTime;
+      if (newTimer <= 0) {
+        this.warningTargets.delete(id);
+      } else {
+        this.warningTargets.set(id, newTimer);
+      }
+    }
   }
 
   private checkCollisions(): void {
@@ -189,6 +201,7 @@ export class Game {
           );
           remainingTargets.push(newTarget);
         } else {
+          this.warningTargets.set(target.id, WARNING_DURATION);
           remainingTargets.push(target);
         }
       } else {
@@ -209,7 +222,12 @@ export class Game {
     this.renderMapBorder();
 
     for (const target of this.targets) {
-      renderTarget(ctx, target);
+      const warningTimer = this.warningTargets.get(target.id);
+      if (warningTimer !== undefined) {
+        renderTargetWarning(ctx, target, WARNING_DURATION - warningTimer);
+      } else {
+        renderTarget(ctx, target);
+      }
     }
 
     this.player.render(ctx);

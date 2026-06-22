@@ -174,3 +174,44 @@ export const checkCollision = (
   const distance = Math.sqrt(dx * dx + dy * dy);
   return distance < playerRadius + target.radius * 0.6;
 };
+
+export const renderTargetWarning = (
+  ctx: CanvasRenderingContext2D,
+  target: Target,
+  warningTimer: number
+): void => {
+  const flashSpeed = 8;
+  const flashIntensity = (Math.sin(warningTimer * flashSpeed * Math.PI * 2) + 1) / 2;
+
+  ctx.save();
+
+  const warningRadius = target.radius * 2 + flashIntensity * target.radius * 0.5;
+  const gradient = ctx.createRadialGradient(
+    target.position.x, target.position.y, target.radius * 0.5,
+    target.position.x, target.position.y, warningRadius
+  );
+  gradient.addColorStop(0, `rgba(244, 67, 54, ${0.6 + flashIntensity * 0.4})`);
+  gradient.addColorStop(0.5, `rgba(244, 67, 54, ${0.3 + flashIntensity * 0.3})`);
+  gradient.addColorStop(1, 'rgba(244, 67, 54, 0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(target.position.x, target.position.y, warningRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  renderTarget(ctx, target);
+
+  ctx.strokeStyle = `rgba(244, 67, 54, ${0.8 + flashIntensity * 0.2})`;
+  ctx.lineWidth = 3 + flashIntensity * 2;
+  ctx.beginPath();
+  ctx.arc(target.position.x, target.position.y, target.radius + 4, 0, Math.PI * 2);
+  ctx.stroke();
+
+  const textY = target.position.y - target.radius - 18 - flashIntensity * 5;
+  ctx.fillStyle = `rgba(244, 67, 54, ${0.9 + flashIntensity * 0.1})`;
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('等级不足', target.position.x, textY);
+
+  ctx.restore();
+};

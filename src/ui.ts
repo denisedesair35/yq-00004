@@ -154,7 +154,7 @@ export class UIRenderer {
 
     ctx.fillStyle = '#aaa';
     ctx.font = '14px sans-serif';
-    ctx.fillText('WASD/方向键移动 | 吞噬比你弱小的目标进化', centerX, centerY + 60);
+    ctx.fillText('WASD/方向键移动 | 吞噬等级不高于你的目标进化', centerX, centerY + 60);
 
     ctx.restore();
   }
