@@ -2,7 +2,7 @@ import type { Target, GameState } from './types';
 import { Player } from './player';
 import { InputManager } from './input';
 import { UIRenderer } from './ui';
-import { generateInitialTargets, generateRandomTarget, renderTarget, renderTargetWarning, checkCollision } from './target';
+import { generateInitialTargets, generateRandomTargetOfType, upgradeTargetToDangerous, renderTarget, renderTargetWarning, checkCollision } from './target';
 import { getNextStage, getMaxLevel } from './evolution';
 
 const INITIAL_TARGET_COUNT = 25;
@@ -11,6 +11,9 @@ const MAP_HEIGHT = 800;
 const WARNING_DURATION = 0.8;
 const DANGEROUS_CHANCE = 0.12;
 const DANGEROUS_DAMAGE = 15;
+const MAX_DANGEROUS_COUNT = Math.ceil(INITIAL_TARGET_COUNT * 0.14);
+const UPGRADE_INTERVAL = 5.0;
+const UPGRADE_CHANCE = 0.3;
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -25,6 +28,7 @@ export class Game {
   private animationFrameId: number | null = null;
   private evolveEffectTimer: number = 0;
   private evolveEffectName: string = '';
+  private upgradeTimer: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -137,6 +141,7 @@ export class Game {
     this.targets = [];
     this.warningTargets.clear();
     this.evolveEffectTimer = 0;
+    this.upgradeTimer = 0;
     
     this.gameState.isRunning = false;
     this.gameState.isPaused = false;
@@ -176,6 +181,45 @@ export class Game {
         this.warningTargets.set(id, newTimer);
       }
     }
+
+    this.upgradeTimer += deltaTime;
+    if (this.upgradeTimer >= UPGRADE_INTERVAL) {
+      this.upgradeTimer = 0;
+      this.tryUpgradeToDangerous();
+    }
+  }
+
+  private countDangerousTargets(): number {
+    let count = 0;
+    for (const t of this.targets) {
+      if (t.type === 'dangerous') count += 1;
+    }
+    return count;
+  }
+
+  private tryUpgradeToDangerous(): void {
+    const dangerousCount = this.countDangerousTargets();
+    if (dangerousCount >= MAX_DANGEROUS_COUNT) return;
+    if (Math.random() > UPGRADE_CHANCE) return;
+
+    const normalTargets: Target[] = [];
+    for (const t of this.targets) {
+      if (t.type !== 'dangerous') {
+        normalTargets.push(t);
+      }
+    }
+    if (normalTargets.length === 0) return;
+
+    const targetIdx = Math.floor(Math.random() * normalTargets.length);
+    const original = normalTargets[targetIdx];
+    const upgraded = upgradeTargetToDangerous(original);
+
+    for (let i = 0; i < this.targets.length; i += 1) {
+      if (this.targets[i].id === original.id) {
+        this.targets[i] = upgraded;
+        break;
+      }
+    }
   }
 
   private checkCollisions(): void {
@@ -198,13 +242,14 @@ export class Game {
             this.evolveEffectName = stage.name;
           }
           
-          const newTarget = generateRandomTarget(
+          const replacementType: 'qi' | 'beast' = target.type === 'qi' ? 'qi' : 'beast';
+          const newTarget = generateRandomTargetOfType(
             MAP_WIDTH,
             MAP_HEIGHT,
             Math.min(playerLevel + 2, getMaxLevel()),
             playerRadius,
             playerPos,
-            DANGEROUS_CHANCE
+            replacementType
           );
           remainingTargets.push(newTarget);
         } else {

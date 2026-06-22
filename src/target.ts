@@ -141,6 +141,52 @@ export const generateRandomTarget = (
   return createTarget(type, level, position);
 };
 
+export const generateRandomTargetOfType = (
+  mapWidth: number,
+  mapHeight: number,
+  maxLevel: number,
+  playerRadius: number,
+  playerPosition: Position,
+  type: 'qi' | 'beast'
+): Target => {
+  const level = Math.floor(Math.random() * maxLevel) + 1;
+  
+  let position: Position;
+  let attempts = 0;
+  const maxAttempts = 50;
+  
+  do {
+    position = {
+      x: Math.random() * (mapWidth - 40) + 20,
+      y: Math.random() * (mapHeight - 40) + 20
+    };
+    attempts += 1;
+    
+    const dx = position.x - playerPosition.x;
+    const dy = position.y - playerPosition.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist > playerRadius + 50) {
+      break;
+    }
+  } while (attempts < maxAttempts);
+  
+  return createTarget(type, level, position);
+};
+
+export const upgradeTargetToDangerous = (target: Target): Target => {
+  const names = DANGEROUS_NAMES[target.level] || DANGEROUS_NAMES[1];
+  const name = names[Math.floor(Math.random() * names.length)];
+  return {
+    ...target,
+    type: 'dangerous',
+    color: DANGEROUS_COLORS[target.level] || DANGEROUS_COLORS[1],
+    radius: 12 + target.level * 3,
+    expValue: 0,
+    name
+  };
+};
+
 export const generateInitialTargets = (
   mapWidth: number,
   mapHeight: number,
